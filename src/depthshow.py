@@ -1,8 +1,12 @@
+
+from asyncore import file_dispatcher
+from multiprocessing.connection import wait
 import message_filters
 import imp
-for cv2 import Mat, waitkey
 import numpy as np
 import cv2 as cv
+from cv2 import Mat
+from cv2 import waitKey
 from matplotlib import pyplot as plt
 from socket import INADDR_MAX_LOCAL_GROUP, MsgFlag
 from timeit import repeat
@@ -21,15 +25,18 @@ import imp
 rospy.init_node('part3', anonymous=True)
 
 bridge = CvBridge()
+imgL = Image()
+imgR = Image()
 
-def read_left(data):
-    global imgL 
-    imgL = bridge.imgmsg_to_cv2(data, desired_encoding='passthrough')
+# def read_left(data):
+#     global imgL 
+#     imgL = bridge.imgmsg_to_cv2(data, desired_encoding='passthrough')
     
-def read_right(data, camera_info):
+def read_right(left_data,data, camera_info):
     global imgL
     global imgR 
-    
+    print("get data")
+    imgL = bridge.imgmsg_to_cv2(left_data, desired_encoding='passthrough')
     imgR = bridge.imgmsg_to_cv2(data, desired_encoding='passthrough')
     
     grayl = cv.cvtColor(imgL, cv.COLOR_BGR2GRAY)
@@ -43,7 +50,7 @@ def read_right(data, camera_info):
     stereo = cv.StereoSGBM_create(minDisparity = min_disp,
         preFilterCap = 63,
         numDisparities = num_disp,
-        blocksize = win_size,
+        blockSize = win_size,
         P1 = 24*win_size**2,
         P2 = 96*win_size**2,
         mode = 2)
@@ -61,26 +68,34 @@ def read_right(data, camera_info):
     wls_filter.setSigmaColor(sigma)
     filtered_disp = wls_filter.filter(left_disp, grayl, disparity_map_right = right_disp)
     filtered_disp_vis = cv.ximgproc.getDisparityVis(filtered_disp, filtered_disp_bis, 1.0)
-    
+    # print('berfore show')
+    # cv.imshow('test', filtered_disp_vis)
+    # cv.waitKey(1)
+    # print("after show")
+
     puber = rospy.Publisher('/zed/depth/depthsubmission', Image, queue_size = 10)
     pic = bridge.cv2_to_imgmsg(filtered_disp_vis, encoding = "passthrough")
     puber.publish(pic)
-    
+    cx = camera_info.K(2)
+    cy = camera_info.K(5)
+    base_line = 140
+    cx_diff = camera_info.P()
     rate = rospy.Rate(10)
     rate.sleep()
     
-    def listener():
-        rospy.Subscriber("/zed/zed_node/left/image_rect_color", Image, read_left)
-        image_filter = message_filters.Subscriber("/zed/zed_node/right/image_rect_color", Image)
-        info_filter = message_filters.Subscriber("/zed/zed_node/right/camera_info", CameraInfo)
-        ts = message_filters.TimeSynchronizer([image_filter, info_filter], 10)
-        ts.registerCallback(read_right)
+def listener():
+    print("try sub")
+    image_left_filter = message_filters.Subscriber("/zed/zed_node/left/image_rect_color", Image)
+    image_filter = message_filters.Subscriber("/zed/zed_node/right/image_rect_color", Image)
+    info_filter = message_filters.Subscriber("/zed/zed_node/right/camera_info", CameraInfo)
+    ts = message_filters.TimeSynchronizer([image_left_filter, image_filter, info_filter], 10)
+    ts.registerCallback(read_right)
         
         
-    if __name__ == '__main__':
-        try:
-            listener()
-            rospy.spin()
-        except rospy.ROSInterruptException:
-            pass
-        
+if __name__ == '__main__':
+    try:
+        listener()
+        rospy.spin()
+    except rospy.ROSInterruptException:
+        pass
+    
