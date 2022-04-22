@@ -1,0 +1,12 @@
+<launch>
+    
+    <node name="bag" pkg="rosbag" type="play" args=" $(find lab7)/data/PA7.bag"/>
+    
+    <!--node name="visual" pkg="rviz" type="rviz" args="-d $(find lab7)/rviz.rviz" /-->
+    
+    <!-- <node name="chess" pkg="lab7" type="chess.py" output="screen" /> -->
+
+    <node name="part2" pkg="lab7" type="part2.py" output="screen" />
+
+
+</launch>
