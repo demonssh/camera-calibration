@@ -171,7 +171,7 @@ include_directories(
 #   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 # )
 
-catkin_install_python(PROGRAMS src/chess.py src/part2.py
+catkin_install_python(PROGRAMS src/chess.py src/depthshow.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
   
 )
