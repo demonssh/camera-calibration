@@ -1,4 +1,4 @@
-# CSE468_Assignment7
+# camera calibration
 
 The objective of this assignment is to perform camera calibration and generate depth
 map from ::;tereo image::;. Create a new package called lab 7. Download the files required
